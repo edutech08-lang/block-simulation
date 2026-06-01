@@ -42,23 +42,6 @@ body { overflow:hidden; font-family:'HSHwalkong','Segoe UI',Arial,sans-serif; cu
 }
 #dmg-flash.hit { background:rgba(0,80,200,0.45); }
 
-#block-selector {
-    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
-    display:none; gap:6px; background:rgba(0,0,0,0.7);
-    padding:8px 10px; border-radius:8px; z-index:10;
-    border:1px solid rgba(255,180,50,0.3);
-}
-.bslot {
-    width:52px; height:52px; border:2px solid rgba(255,255,255,0.2);
-    border-radius:4px; cursor:pointer; display:flex; align-items:center;
-    justify-content:center; flex-direction:column; gap:2px;
-    user-select:none; transition:transform .1s; position:relative;
-}
-.bslot:hover { transform:scale(1.08); border-color:rgba(255,180,50,0.5); }
-.bslot.active { border-color:#ffb832; box-shadow:0 0 8px rgba(255,180,50,0.5); }
-.bslot canvas { width:32px; height:32px; image-rendering:pixelated; border-radius:2px; }
-.bslot span { color:#ccc; font-size:13px; font-weight:bold; text-shadow:0 1px 2px #000; }
-.bslot .hotkey { position:absolute; top:2px; left:4px; color:rgba(255,180,50,0.7); font-size:12px; }
 
 #overlay {
     position:fixed; inset:0;
@@ -405,7 +388,6 @@ canvas { display:block; }
 <body>
 <div id="crosshair"></div>
 <div id="hud"></div>
-<div id="block-selector"></div>
 <div id="dmg-flash"></div>
 <div id="overlay">
     <h1>⚙ INDUSTRIAL CITY</h1>
@@ -1617,20 +1599,17 @@ function respawn() {
 }
 const overlay=document.getElementById('overlay');
 const crosshair=document.getElementById('crosshair');
-const selectorEl=document.getElementById('block-selector');
 const hudEl=document.getElementById('hud');
 
 function showMenu() {
     gameRunning=false;
     overlay.style.display='flex'; crosshair.style.display='none';
-    selectorEl.style.display='none';
     hudEl.style.display='none';
     document.body.style.cursor='default'; blockOutline.visible=false;
 }
 function hideMenu() {
     gameRunning=true;
     overlay.style.display='none'; crosshair.style.display='block';
-    selectorEl.style.display='flex';
     hudEl.style.display='block';
     document.body.style.cursor='none';
 }
@@ -2286,31 +2265,6 @@ document.addEventListener('mousemove',e=>{
 // ═══════════════════════════════════════════════════════
 //  블록 선택 UI (도시 블록)
 // ═══════════════════════════════════════════════════════
-const BLOCK_TYPES = [
-    { type:'concrete', label:'콘크리트', tex:tConcrete },
-    { type:'glass',    label:'유리',     tex:tGlass },
-    { type:'brick',    label:'벽돌',     tex:tBrick },
-    { type:'metal',    label:'철판',     tex:tMetal },
-    { type:'asphalt',  label:'아스팔트', tex:tAsphalt },
-    { type:'chimney',  label:'굴뚝',     tex:tChimney },
-];
-let selectedType = 'concrete';
-const slotEls = [];
-BLOCK_TYPES.forEach((bt,i)=>{
-    const slot=document.createElement('div');
-    slot.className='bslot'+(i===0?' active':'');
-    slot.innerHTML=`<span class="hotkey">${i+1}</span>`;
-    const pc=document.createElement('canvas'); pc.width=pc.height=S;
-    pc.getContext('2d').drawImage(bt.tex.image,0,0); slot.appendChild(pc);
-    const lbl=document.createElement('span'); lbl.textContent=bt.label; slot.appendChild(lbl);
-    slot.addEventListener('click',()=>selectBlock(i));
-    selectorEl.appendChild(slot); slotEls.push(slot);
-});
-function selectBlock(i) {
-    selectedType=BLOCK_TYPES[i].type;
-    slotEls.forEach((s,j)=>s.classList.toggle('active',i===j));
-}
-document.addEventListener('keydown',e=>{ const n=parseInt(e.key); if(n>=1&&n<=BLOCK_TYPES.length) selectBlock(n-1); });
 
 // ═══════════════════════════════════════════════════════
 //  레이캐스터 (주변 블록만)
@@ -2337,7 +2291,7 @@ window.addEventListener('mousedown',e=>{
     } else if(e.button===0) {
         const np=hit.object.position.clone().add(hit.face.normal);
         const dx=Math.abs(np.x-camera.position.x), dz=Math.abs(np.z-camera.position.z), dy=Math.abs(np.y-camera.position.y);
-        if(!(dx<0.6&&dz<0.6&&dy<1.6)) createBlock(np.x,np.y,np.z,selectedType);
+        if(!(dx<0.6&&dz<0.6&&dy<1.6)) createBlock(np.x,np.y,np.z,'concrete');
     }
 });
 window.addEventListener('contextmenu',e=>e.preventDefault());
