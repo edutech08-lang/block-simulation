@@ -400,16 +400,6 @@ canvas { display:block; }
     display:flex; align-items:center; justify-content:center;
     pointer-events:all; touch-action:none; user-select:none;
 }
-#fly-btn {
-    position:absolute; bottom:122px; right:24px;
-    width:56px; height:56px; border-radius:50%;
-    background:rgba(255,180,50,0.10);
-    border:2px solid rgba(255,180,50,0.30);
-    color:#ffb832; font-size:1.1rem;
-    display:flex; align-items:center; justify-content:center;
-    pointer-events:all; touch-action:none; user-select:none;
-}
-#fly-btn.fly-on { background:rgba(255,180,50,0.35); border-color:rgba(255,180,50,0.8); }
 </style>
 </head>
 <body>
@@ -537,7 +527,6 @@ canvas { display:block; }
         <div id="joystick-knob"></div>
     </div>
     <div id="jump-btn">↑</div>
-    <div id="fly-btn">✈</div>
 </div>
 
 <div id="clear-overlay">
@@ -2436,24 +2425,11 @@ const jumpBtn = document.getElementById('jump-btn');
 jumpBtn.addEventListener('touchstart', e => { e.preventDefault(); keys['Space'] = true; },  { passive:false });
 jumpBtn.addEventListener('touchend',   e => { e.preventDefault(); keys['Space'] = false; }, { passive:false });
 
-// 비행 토글 버튼
-const flyBtn = document.getElementById('fly-btn');
-flyBtn.addEventListener('touchstart', e => {
-    e.preventDefault();
-    flying = !flying; vy = 0;
-    flyBtn.classList.toggle('fly-on', flying);
-}, { passive:false });
-
 let vy=0, onGround=false, flying=false;
 const GRAVITY=-0.016, JUMP=0.42;
 const PW=0.3, PHT=0.15, PHB=1.65;
 
-// F키: 비행 토글
 document.addEventListener('keydown', e => {
-    if (e.code === 'KeyF' && gameRunning) {
-        flying = !flying;
-        vy = 0; // 전환 시 수직 속도 초기화
-    }
 });
 
 function overlapping(px,py,pz) {
