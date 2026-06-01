@@ -1631,7 +1631,7 @@ function hideMenu() {
     gameRunning=true;
     overlay.style.display='none'; crosshair.style.display='block';
     selectorEl.style.display='flex';
-    hudEl.style.display='none';
+    hudEl.style.display='block';
     document.body.style.cursor='none';
 }
 
@@ -2425,7 +2425,7 @@ const jumpBtn = document.getElementById('jump-btn');
 jumpBtn.addEventListener('touchstart', e => { e.preventDefault(); keys['Space'] = true; },  { passive:false });
 jumpBtn.addEventListener('touchend',   e => { e.preventDefault(); keys['Space'] = false; }, { passive:false });
 
-let vy=0, onGround=false, flying=false;
+let vy=0, onGround=false;
 const GRAVITY=-0.016, JUMP=0.42;
 const PW=0.3, PHT=0.15, PHB=1.65;
 
@@ -2553,15 +2553,7 @@ function animate() {
         const inWater = isWaterAt(camera.position.x, camera.position.y - PHB, camera.position.z)
                      || isWaterAt(camera.position.x, camera.position.y,       camera.position.z);
 
-        if (flying) {
-            // ── 비행 모드 ──────────────────────
-            const flySpeed = 0.38;
-            camera.position.x += dir.x * flySpeed;
-            camera.position.z += dir.z * flySpeed;
-            if (keys['Space'])      camera.position.y += flySpeed;
-            if (keys['ShiftLeft'] || keys['ShiftRight']) camera.position.y -= flySpeed;
-
-        } else if (inWater) {
+        if (inWater) {
             // ── 수영 모드 ──────────────────────
             const swimSpeed = 0.10;
             camera.position.x += dir.x * swimSpeed;
@@ -2648,14 +2640,7 @@ function animate() {
         const zoneName = inCityZone ? (typeNames[btype]||btype) : '바다';
         const hpColor = health > 60 ? '#44dd44' : health > 30 ? '#ffcc00' : '#ff4444';
         const hpBar = '█'.repeat(Math.round(health/10)) + '░'.repeat(10 - Math.round(health/10));
-        const modeStr = flying ? '✈ 비행중' : inWater ? '🌊 수영중' : '🚶 지상';
-        hudEl.innerHTML =
-            `HP: <span style="color:${hpColor};font-weight:bold">${hpBar} ${health}/${maxHealth}</span><br>` +
-            `구역: <span class="hi">${zoneName}${inWater ? ' ⚠ 위험' : ''}</span><br>` +
-            `청크: <span class="hi">${pcx}, ${pcz}</span><br>` +
-            `로드: <span class="hi">${loadedChunks.size}</span>청크 / 대기: <span class="hi">${chunkQueue.length}</span><br>` +
-            `고도: <span class="hi">${Math.round(camera.position.y-1.65)}m</span><br>` +
-            `모드: <span class="hi">${modeStr}</span>`;
+        hudEl.innerHTML = `HP: <span style="color:${hpColor};font-weight:bold">${hpBar} ${health}/${maxHealth}</span>`;
         checkDisasterClear();
     }
 
@@ -2853,7 +2838,7 @@ function animate() {
         const waterSurfaceY = rainFloodPlane ? rainFloodPlane.position.y + 10 : -99;
 
         // 침수 부력
-        if (!flying && camera.position.y - PHB < waterSurfaceY) {
+        if (camera.position.y - PHB < waterSurfaceY) {
             vy += 0.010; if (vy > 0.10) vy = 0.10;
         }
 
@@ -2909,7 +2894,7 @@ function animate() {
         // 범람 부력 & 데미지 (수면 아래 있을 때)
         if (tsunamiFloodPlane) {
             const floodTopY = tsunamiFloodPlane.position.y + 0.4;
-            if (camera.position.y - PHB < floodTopY && !flying) {
+            if (camera.position.y - PHB < floodTopY) {
                 vy += 0.012;
                 if (vy > 0.12) vy = 0.12;
             }
@@ -2946,7 +2931,7 @@ function animate() {
             : Math.max(0, (1 - (distToEye - STORM_EYE_RADIUS) / (outerR - STORM_EYE_RADIUS)) * 0.11);
 
         // 플레이어 밀기
-        if (gameRunning && !flying) {
+        if (gameRunning) {
             camera.position.x += Math.cos(windAng) * windStr;
             camera.position.z += Math.sin(windAng) * windStr;
         }
@@ -3021,7 +3006,7 @@ function animate() {
         }
         const typhoonSurface = typhoonFloodPlane ? typhoonFloodPlane.position.y + 10 : -99;
 
-        if (!flying && camera.position.y - PHB < typhoonSurface) {
+        if (camera.position.y - PHB < typhoonSurface) {
             vy += 0.010; if (vy > 0.10) vy = 0.10;
         }
         if (typhoonTimer % 30 === 0 && camera.position.y - PHB < typhoonSurface) {
