@@ -27,13 +27,6 @@ body { overflow:hidden; font-family:'HSHwalkong','Segoe UI',Arial,sans-serif; cu
 #crosshair::before { left:11px; top:0; width:2px; height:24px; }
 #crosshair::after  { top:11px; left:0; width:24px; height:2px; }
 
-#info {
-    position:fixed; top:10px; left:10px; color:#ddd;
-    background:rgba(0,0,0,0.65); padding:10px 14px; border-radius:6px;
-    font-size:19px; line-height:1.9; user-select:none; display:none;
-    border:1px solid rgba(255,180,50,0.3);
-}
-#info span { color:#ffb832; font-weight:bold; }
 
 #hud {
     position:fixed; top:10px; right:10px; color:#aaa;
@@ -421,12 +414,6 @@ canvas { display:block; }
 </head>
 <body>
 <div id="crosshair"></div>
-<div id="info">
-    <span>W A S D</span> 이동 &nbsp;|&nbsp; <span>Space</span> 위/점프<br>
-    <span>마우스</span> 시점 &nbsp;|&nbsp; <span>Shift</span> 아래<br>
-    <span>F</span> 비행 토글 &nbsp;|&nbsp; <span>ESC</span> 메뉴<br>
-    <span>좌클릭</span> 블록 설치 &nbsp;|&nbsp; <span>우클릭</span> 블록 제거
-</div>
 <div id="hud"></div>
 <div id="block-selector"></div>
 <div id="dmg-flash"></div>
@@ -1641,21 +1628,20 @@ function respawn() {
 }
 const overlay=document.getElementById('overlay');
 const crosshair=document.getElementById('crosshair');
-const infoEl=document.getElementById('info');
 const selectorEl=document.getElementById('block-selector');
 const hudEl=document.getElementById('hud');
 
 function showMenu() {
     gameRunning=false;
     overlay.style.display='flex'; crosshair.style.display='none';
-    infoEl.style.display='none'; selectorEl.style.display='none';
+    selectorEl.style.display='none';
     hudEl.style.display='none';
     document.body.style.cursor='default'; blockOutline.visible=false;
 }
 function hideMenu() {
     gameRunning=true;
     overlay.style.display='none'; crosshair.style.display='block';
-    infoEl.style.display='block'; selectorEl.style.display='flex';
+    selectorEl.style.display='flex';
     hudEl.style.display='block';
     document.body.style.cursor='none';
 }
