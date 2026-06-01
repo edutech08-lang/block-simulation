@@ -370,6 +370,53 @@ canvas { display:block; }
     to   { opacity:1; transform:translateX(0); }
 }
 .d-manual-show { animation:d-manual-in 0.4s cubic-bezier(.22,.68,0,1.2) forwards; }
+
+/* ── 모바일 조이스틱 ── */
+#mobile-controls {
+    display:none; position:fixed; bottom:0; left:0; right:0;
+    pointer-events:none; z-index:30;
+}
+@media (pointer:coarse) {
+    #mobile-controls { display:block; }
+    #crosshair { display:none !important; }
+    body { cursor:default !important; }
+}
+#joystick-zone {
+    position:absolute; bottom:24px; left:24px;
+    width:140px; height:140px; pointer-events:all; touch-action:none;
+}
+#joystick-base {
+    position:absolute; inset:0; border-radius:50%;
+    background:rgba(255,255,255,0.07);
+    border:2px solid rgba(255,255,255,0.18);
+}
+#joystick-knob {
+    position:absolute; width:54px; height:54px;
+    top:50%; left:50%; transform:translate(-50%,-50%);
+    border-radius:50%;
+    background:rgba(255,180,50,0.52);
+    border:2px solid rgba(255,180,50,0.85);
+    box-shadow:0 0 14px rgba(255,150,0,0.4);
+}
+#jump-btn {
+    position:absolute; bottom:38px; right:24px;
+    width:72px; height:72px; border-radius:50%;
+    background:rgba(255,255,255,0.10);
+    border:2px solid rgba(255,255,255,0.28);
+    color:#fff; font-size:1.5rem;
+    display:flex; align-items:center; justify-content:center;
+    pointer-events:all; touch-action:none; user-select:none;
+}
+#fly-btn {
+    position:absolute; bottom:122px; right:24px;
+    width:56px; height:56px; border-radius:50%;
+    background:rgba(255,180,50,0.10);
+    border:2px solid rgba(255,180,50,0.30);
+    color:#ffb832; font-size:1.1rem;
+    display:flex; align-items:center; justify-content:center;
+    pointer-events:all; touch-action:none; user-select:none;
+}
+#fly-btn.fly-on { background:rgba(255,180,50,0.35); border-color:rgba(255,180,50,0.8); }
 </style>
 </head>
 <body>
@@ -496,6 +543,16 @@ canvas { display:block; }
 <div id="typhoon-eye-notice">🌀 태풍의 눈 — 잠시 고요합니다</div>
 <div id="cycle-hud"></div>
 <div id="disaster-hint"></div>
+
+<div id="mobile-controls">
+    <div id="joystick-zone">
+        <div id="joystick-base"></div>
+        <div id="joystick-knob"></div>
+    </div>
+    <div id="jump-btn">↑</div>
+    <div id="fly-btn">✈</div>
+</div>
+
 <div id="clear-overlay">
     <div class="clear-title">대피 성공!</div>
     <div class="clear-sub" id="clear-sub-text"></div>
@@ -2317,6 +2374,90 @@ const keys={};
 document.addEventListener('keydown',e=>{ keys[e.code]=true; });
 document.addEventListener('keyup',  e=>{ keys[e.code]=false; });
 
+// ── 모바일 조이스틱 ──────────────────────────────────────
+const joystick = { active:false, id:null, ox:0, oy:0, dx:0, dy:0 };
+const JOYSTICK_MAX = 54;
+const joystickZone = document.getElementById('joystick-zone');
+const joystickKnob = document.getElementById('joystick-knob');
+
+joystickZone.addEventListener('touchstart', e => {
+    e.preventDefault(); e.stopPropagation();
+    const t = e.changedTouches[0];
+    const r = joystickZone.getBoundingClientRect();
+    joystick.active = true; joystick.id = t.identifier;
+    joystick.ox = r.left + r.width / 2;
+    joystick.oy = r.top  + r.height / 2;
+    joystick.dx = 0; joystick.dy = 0;
+}, { passive:false });
+
+joystickZone.addEventListener('touchmove', e => {
+    e.preventDefault(); e.stopPropagation();
+    for (const t of e.changedTouches) {
+        if (t.identifier !== joystick.id) continue;
+        let dx = t.clientX - joystick.ox;
+        let dy = t.clientY - joystick.oy;
+        const len = Math.sqrt(dx*dx + dy*dy);
+        if (len > JOYSTICK_MAX) { dx = dx/len*JOYSTICK_MAX; dy = dy/len*JOYSTICK_MAX; }
+        joystick.dx = dx / JOYSTICK_MAX;
+        joystick.dy = dy / JOYSTICK_MAX;
+        joystickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+    }
+}, { passive:false });
+
+function resetJoystick() {
+    joystick.active = false; joystick.id = null;
+    joystick.dx = 0; joystick.dy = 0;
+    joystickKnob.style.transform = 'translate(-50%,-50%)';
+}
+joystickZone.addEventListener('touchend',   e => { e.preventDefault(); resetJoystick(); }, { passive:false });
+joystickZone.addEventListener('touchcancel',e => { e.preventDefault(); resetJoystick(); }, { passive:false });
+
+// 우측 드래그: 카메라 시점 조작
+let lookTouch = null;
+document.addEventListener('touchstart', e => {
+    if (!gameRunning) return;
+    for (const t of e.changedTouches) {
+        if (lookTouch) continue;
+        if (t.clientX <= window.innerWidth / 2) continue;
+        lookTouch = { id:t.identifier, lx:t.clientX, ly:t.clientY };
+    }
+}, { passive:true });
+
+document.addEventListener('touchmove', e => {
+    if (!gameRunning || !lookTouch) return;
+    for (const t of e.changedTouches) {
+        if (t.identifier !== lookTouch.id) continue;
+        const dx = t.clientX - lookTouch.lx;
+        const dy = t.clientY - lookTouch.ly;
+        yaw   -= dx * 0.005;
+        pitch -= dy * 0.005;
+        pitch = Math.max(-1.55, Math.min(1.55, pitch));
+        camera.rotation.order = 'YXZ';
+        camera.rotation.y = yaw; camera.rotation.x = pitch;
+        lookTouch.lx = t.clientX; lookTouch.ly = t.clientY;
+    }
+}, { passive:true });
+
+document.addEventListener('touchend', e => {
+    if (!lookTouch) return;
+    for (const t of e.changedTouches) {
+        if (t.identifier === lookTouch.id) { lookTouch = null; break; }
+    }
+}, { passive:true });
+
+// 점프 버튼
+const jumpBtn = document.getElementById('jump-btn');
+jumpBtn.addEventListener('touchstart', e => { e.preventDefault(); keys['Space'] = true; },  { passive:false });
+jumpBtn.addEventListener('touchend',   e => { e.preventDefault(); keys['Space'] = false; }, { passive:false });
+
+// 비행 토글 버튼
+const flyBtn = document.getElementById('fly-btn');
+flyBtn.addEventListener('touchstart', e => {
+    e.preventDefault();
+    flying = !flying; vy = 0;
+    flyBtn.classList.toggle('fly-on', flying);
+}, { passive:false });
+
 let vy=0, onGround=false, flying=false;
 const GRAVITY=-0.016, JUMP=0.42;
 const PW=0.3, PHT=0.15, PHB=1.65;
@@ -2356,10 +2497,17 @@ function resolveV() {
     return grounded;
 }
 function moveDir() {
-    const v=new THREE.Vector3();
-    if(keys['KeyW']) v.z-=1; if(keys['KeyS']) v.z+=1;
-    if(keys['KeyA']) v.x-=1; if(keys['KeyD']) v.x+=1;
-    if(!v.lengthSq()) return v;
+    const v = new THREE.Vector3();
+    if (keys['KeyW']) v.z -= 1; if (keys['KeyS']) v.z += 1;
+    if (keys['KeyA']) v.x -= 1; if (keys['KeyD']) v.x += 1;
+    const jx = joystick.dx, jy = joystick.dy;
+    if (!v.lengthSq() && (Math.abs(jx) > 0.08 || Math.abs(jy) > 0.08)) {
+        const mag = Math.min(1, Math.sqrt(jx*jx + jy*jy));
+        v.x = jx; v.z = jy;
+        v.normalize().multiplyScalar(mag).applyMatrix4(new THREE.Matrix4().makeRotationY(yaw));
+        return v;
+    }
+    if (!v.lengthSq()) return v;
     v.normalize().applyMatrix4(new THREE.Matrix4().makeRotationY(yaw));
     return v;
 }
